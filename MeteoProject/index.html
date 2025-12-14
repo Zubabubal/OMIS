@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MeteoCore Enterprise | Minsk</title>
+    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="logo">
+            <i class="fa-solid fa-cloud-bolt"></i> GesWeather
+        </div>
+
+        <nav class="nav-menu">
+            <div class="nav-item active" data-tab="dashboard">
+                <i class="fa-solid fa-map-location-dot"></i> Мониторинг
+            </div>
+            <div class="nav-item" data-tab="modeling">
+                <i class="fa-solid fa-chart-line"></i> Моделирование
+            </div>
+            <div class="nav-item" data-tab="archive">
+                <i class="fa-solid fa-database"></i> Климатический Архив
+            </div>
+            <div class="nav-item" data-tab="alerts">
+                <i class="fa-solid fa-triangle-exclamation"></i> Оповещения
+            </div>
+            <div class="nav-item" data-tab="forecast">
+                <i class="fa-solid fa-calendar-day"></i> Прогноз на 5 дней
+            </div>
+        </nav>
+
+        <div class="user-profile">
+            <div class="avatar">НГ</div>
+            <div>
+                <div style="font-weight: 600; font-size: 14px;">Н.Ю. Гесман</div>
+                <div style="font-size: 11px; color: var(--accent);">Lead C# Developer</div>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="header">
+            <h2 id="page-title" style="font-size: 18px; font-weight: 600;">Оперативный мониторинг</h2>
+            <div class="server-status">
+                <div class="blink"></div>
+                <span id="server-status-text">SRV-BY-MSQ-NWP-01 [CONNECTED]</span>
+            </div>
+        </header>
+
+        <div id="dashboard" class="view-section active-view">
+            <div class="dashboard-grid">
+                <div class="card" style="position: relative;">
+                    <div id="map"></div>
+                    <div style="position: absolute; bottom: 20px; left: 20px; z-index: 500; background: rgba(15,23,42,0.9); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
+                        <div style="font-size: 12px; font-weight: bold; margin-bottom: 8px;">Радар допплера</div>
+                        
+                        <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+                            <span style="width: 12px; height: 12px; background-color: var(--primary); border-radius: 50%; border: 2px solid white;"></span> Метеостанция
+                        </div>
+                        
+                        <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+                            <span style="width: 12px; height: 12px; background: rgba(59, 130, 246, 0.5); border: 1px dashed white; border-radius: 50%;"></span> Дождевое облако
+                        </div>
+                        
+                        <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+                            <span style="width: 12px; height: 12px; background: rgba(239, 68, 68, 0.8); border-radius: 50%;"></span> Грозовой фронт
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <span>МС "Минск" (ID: 26850)</span>
+                            <div class="last-update">Загрузка...</div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <button id="refreshWeatherBtn" 
+                                    style="background: none; border: none; color: var(--accent); cursor: pointer; padding: 5px;"
+                                    title="Обновить данные">
+                                <i class="fa-solid fa-arrows-rotate" id="refreshIcon"></i>
+                            </button>
+                            <i class="fa-solid fa-tower-broadcast" style="color: var(--success);"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="weather-stat">
+                        <div>
+                            <div class="stat-value" id="currentTemp">+19.2°C</div>
+                            <div class="stat-label">Температура воздуха</div>
+                        </div>
+                        <i class="fa-solid fa-temperature-high"></i>
+                    </div>
+
+                    <div class="weather-stat">
+                        <div>
+                            <div class="stat-value" id="currentPressure">748 мм</div>
+                            <div class="stat-label">Атм. давление</div>
+                        </div>
+                        <i class="fa-solid fa-gauge-high"></i>
+                    </div>
+
+                    <div class="weather-stat">
+                        <div>
+                            <div class="stat-value" id="currentWind">СЗ, 12 м/с</div>
+                            <div class="stat-label">Ветер</div>
+                        </div>
+                        <i class="fa-solid fa-wind"></i>
+                    </div>
+
+                    <div class="weather-stat">
+                        <div>
+                            <div class="stat-value" id="currentHumidity">65%</div>
+                            <div class="stat-label">Влажность воздуха</div>
+                        </div>
+                        <i class="fa-solid fa-droplet"></i>
+                    </div>
+
+                    <div class="weather-stat">
+                        <div>
+                            <div class="stat-value" id="feelsLike">+18°C</div>
+                            <div class="stat-label">Ощущается как</div>
+                        </div>
+                        <i class="fa-solid fa-temperature-half"></i>
+                    </div>
+
+                    <div style="padding: 20px; margin-top: auto;">
+                        <div style="background: rgba(239, 68, 68, 0.1); border-left: 3px solid var(--danger); padding: 12px; border-radius: 4px;">
+                            <div style="color: var(--danger); font-weight: bold; font-size: 13px; margin-bottom: 4px;">
+                                <i class="fa-solid fa-triangle-exclamation"></i> ШТОРМОВОЕ
+                            </div>
+                            <div style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">
+                                Ожидается прохождение фронта через Минск в 16:00. Гроза, шквал.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="modeling" class="view-section">
+            <div class="modeling-grid">
+                <div class="card" style="grid-row: 1 / 3;">
+                    <div class="card-header">Параметры модели</div>
+                    <div style="padding-top: 20px;">
+                        <div class="form-group">
+                            <label>Алгоритм расчёта</label>
+                            <select class="form-control" id="algorithmSelect">
+                                <option>WRF-ARW (Mesoscale)</option>
+                                <option>GFS (Global)</option>
+                                <option>ICON-EU</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Начальные условия</label>
+                            <select class="form-control" id="conditionsSelect">
+                                <option>Текущие (Real-time)</option>
+                                <option>Архив (12.05.2024)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Разрешение сетки</label>
+                            <select class="form-control" id="resolutionSelect">
+                                <option>3 км (Высокое)</option>
+                                <option>9 км (Среднее)</option>
+                                <option>27 км (Низкое)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Горизонт прогноза</label>
+                            <input type="range" min="24" max="168" value="72" class="form-control" id="forecastRange" style="padding: 0;">
+                            <div style="text-align: right; font-size: 11px; margin-top: 5px;" id="rangeValue">72 часа</div>
+                        </div>
+                        
+                        <div style="margin-top: 40px;">
+                            <button class="btn" id="startSimulationBtn">
+                                <i class="fa-solid fa-play"></i> Запустить расчёт
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="padding: 20px; position: relative;">
+                    <div class="card-header" style="padding: 0 0 15px 0; border: none;">
+                        Визуализация прогноза (Ensemble Prediction)
+                    </div>
+                    <div style="flex: 1; min-height: 0;">
+                        <canvas id="forecastChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header" style="font-size: 12px; background: #111;">
+                        <i class="fa-solid fa-terminal"></i> &nbsp; System Output Log
+                    </div>
+                    <div class="console-output" id="console">
+                        <div class="log-line"><span class="log-time">14:00:01</span>System initialized. Waiting for input...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="archive" class="view-section">
+            <div class="card" style="min-height: 100%;">
+                <div class="card-header">
+                    <span>Данные наблюдений (МС Минск-Уручье)</span>
+                    <div style="display: flex; gap: 10px;">
+                         <select class="form-control" style="width: 150px; font-size: 12px; padding: 6px;" id="archivePeriod">
+                            <option value="24">Последние 24ч</option>
+                            <option value="168">7 дней</option>
+                            <option value="720">30 дней</option>
+                        </select>
+                        <button class="btn btn-sm" id="exportBtn" style="background: var(--primary); color: white;">Экспорт CSV</button>
+                    </div>
+                </div>
+                <div style="padding: 0; overflow: auto;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Время (UTC)</th>
+                                <th>Температура</th>
+                                <th>Влажность</th>
+                                <th>Давление</th>
+                                <th>Ветер</th>
+                                <th>Явления</th>
+                                <th>Статус</th>
+                            </tr>
+                        </thead>
+                        <tbody id="archiveTableBody">
+                            <!-- Данные загрузятся сюда -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="alerts" class="view-section">
+            <div class="alerts-grid">
+                <div class="card">
+                    <div class="card-header">Создать оповещение</div>
+                    <div style="padding: 20px;">
+                        <div class="form-group" style="padding:0; margin-bottom: 20px;">
+                            <label>Тип опасного явления</label>
+                            <select class="form-control" id="alertType">
+                                <option>Гроза / Молния</option>
+                                <option>Шквалистый ветер</option>
+                                <option>Град</option>
+                                <option>Гололедица</option>
+                                <option>Туман</option>
+                                <option>Сильный дождь</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="padding:0; margin-bottom: 20px;">
+                            <label>Зона действия</label>
+                            <select class="form-control" id="alertZone">
+                                <option>г. Минск (Все районы)</option>
+                                <option>Минская область (Север)</option>
+                                <option>Минская область (Центр)</option>
+                                <option>Минская область (Юг)</option>
+                                <option>МКАД и прилегающие территории</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="padding:0; margin-bottom: 20px;">
+                            <label>Уровень угрозы</label>
+                            <select class="form-control" id="alertLevel">
+                                <option style="color:orange;">Оранжевый (Предупреждение)</option>
+                                <option style="color:red;">Красный (Чрезвычайная)</option>
+                                <option style="color:yellow;">Желтый (Внимание)</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="padding:0; margin-bottom: 20px;">
+                            <label>Текст сообщения</label>
+                            <textarea class="form-control" id="alertMessage" rows="4">Ожидается усиление ветра до 25 м/с...</textarea>
+                        </div>
+                        <button class="btn btn-danger" id="sendAlertBtn">
+                            <i class="fa-solid fa-paper-plane"></i> Отправить предупреждение
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">Активные штормовые предупреждения</div>
+                    <div style="padding: 20px 0;" id="alertsContainer">
+                        <!-- Оповещения загрузятся сюда -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="forecast" class="view-section">
+            <div class="card" style="min-height: 100%;">
+                <div class="card-header">
+                    <span>Прогноз на 5 дней</span>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <select class="form-control" style="width: 150px; font-size: 12px; padding: 6px;" id="forecastCity">
+                            <option value="Minsk">Минск</option>
+                            <option value="Grodno">Гродно</option>
+                            <option value="Brest">Брест</option>
+                            <option value="Vitebsk">Витебск</option>
+                            <option value="Gomel">Гомель</option>
+                            <option value="Mogilev">Могилев</option>
+                        </select>
+                        <button class="btn btn-sm" id="refreshForecastBtn" style="background: var(--primary); color: white;">
+                            <i class="fa-solid fa-arrows-rotate"></i> Обновить
+                        </button>
+                    </div>
+                </div>
+                <div style="padding: 20px;">
+                    <div id="forecastContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px;">
+                        <!-- Прогноз загрузится сюда -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
